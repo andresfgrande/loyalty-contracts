@@ -27,7 +27,7 @@ contract LoyaltyProgramFactory is Ownable {
     function createLoyaltyProgram(address commerceAddress, string memory commerceName) public onlyOwner returns (LoyaltyProgram) {
         require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LoyaltyProgram already exists for this commerce address");
 
-        LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress);
+        LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress, commerceName);
 
         Commerce memory newCommerce = Commerce({
             name: commerceName,
@@ -61,4 +61,10 @@ contract LoyaltyProgramFactory is Ownable {
     function getCommerceCount() public view returns (uint256) {
         return commerceAddresses.length;
     }
+
+    function getCommerceByAddress(address _commerceAddress) public view returns (string memory name, address loyaltyProgramAddress) {
+        Commerce memory commerce = commerceDetailsByAddress[_commerceAddress];
+        return (commerce.name, commerce.loyaltyProgramAddress);
+    }
+
 }

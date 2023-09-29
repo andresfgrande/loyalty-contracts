@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./OmniToken.sol";
 
 contract LoyaltyProgram is Ownable {
@@ -12,14 +11,16 @@ contract LoyaltyProgram is Ownable {
     OmniToken public omniToken;
     uint256 public tokenRatio;
     mapping(address => uint256) public nonces;
+    string public commerceName;
 
     event Registered(address indexed user, string loyal_ID);
     event RewardsSent(address indexed to, uint256 amount);
     event TokenRatioUpdated(uint256 newRatio);
     event TokenTransfer(address indexed from, address indexed to, uint256 amount);
 
-    constructor(address _omniTokenAddress, address _owner) {
+    constructor(address _omniTokenAddress, address _owner, string memory _commerceName) {
         omniToken = OmniToken(_omniTokenAddress);
+        commerceName = _commerceName;
         transferOwnership(_owner); 
     }
 
@@ -36,7 +37,7 @@ contract LoyaltyProgram is Ownable {
 
     function setTokenRatio(uint256 _newRatio) public onlyOwner {
         tokenRatio = _newRatio;
-        emit TokenRatioUpdated(newRatio);
+        emit TokenRatioUpdated(_newRatio);
     }
 
     function sendRewards(string memory _loyalId, uint256 _purchaseValue) public onlyOwner {
@@ -55,40 +56,32 @@ contract LoyaltyProgram is Ownable {
         //TODO
     }
 
-    //Gasless
-    function userTransferTokensToUser() public onlyOwner{
-        //TODO
+    //gasless
+    function userTransferTokensToUser(
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes memory _signature
+    ) public onlyOwner {
+        bytes32 message = prefixed(keccak256(abi.encodePacked(_from, _to, _amount)));
+        require(recoverSigner(message, _signature) == _from, "Invalid signature");
+
+        require(omniToken.transferFrom(_from, _to, _amount), "Token transfer failed");
     }
 
-    //Gasless
-    function purchaseProduct(){
-        //TODO
+    // Helper functions
+    function prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-    function getPurchases(){
-        //TODO
+    function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
+        return ECDSA.recover(message, sig);
     }
+
 
     
-
-    /*function transferWithSignature(
-        address from,
-        address to,
-        uint256 amount,
-        uint256 nonce,
-        bytes memory signature
-    ) public {
-        require(nonce == nonces[from], "Invalid nonce");
-        
-        bytes32 hash = keccak256(abi.encodePacked(from, to, amount, nonce, address(this)));
-        bytes32 prefixedHash = hash.toEthSignedMessageHash();
-
-        require(from == prefixedHash.recover(signature), "Invalid signature");
-        nonces[from]++;
-
-        require(omniToken.transferFrom(from, to, amount), "Transfer failed");
-        emit TokenTransfer(from, to, amount);
-    }*/
+    //GETTERS
+    
 }
 
 
