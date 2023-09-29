@@ -16,7 +16,8 @@ contract LoyaltyProgram is Ownable {
     event Registered(address indexed user, string loyal_ID);
     event RewardsSent(address indexed to, uint256 amount);
     event TokenRatioUpdated(uint256 newRatio);
-    event TokenTransfer(address indexed from, address indexed to, uint256 amount);
+    event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp);
+    event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp);
 
     constructor(address _omniTokenAddress, address _owner, string memory _commerceName) {
         omniToken = OmniToken(_omniTokenAddress);
@@ -57,6 +58,19 @@ contract LoyaltyProgram is Ownable {
     }
 
     //gasless
+    function gaslessApprove(
+        address _owner,
+        address _spender,
+        uint256 _value,
+        bytes memory _signature
+    ) public onlyOwner {
+        bytes32 message = prefixed(keccak256(abi.encodePacked(_owner, _spender, _value)));
+        require(recoverSigner(message, _signature) == _owner, "Invalid signature");
+
+        require(omniToken.approveFor(_owner, _spender, _value), "Approval failed");
+    }
+
+    //gasless
     function userTransferTokensToUser(
         address _from,
         address _to,
@@ -67,6 +81,7 @@ contract LoyaltyProgram is Ownable {
         require(recoverSigner(message, _signature) == _from, "Invalid signature");
 
         require(omniToken.transferFrom(_from, _to, _amount), "Token transfer failed");
+        emit UserTokenTransfer(_from, _to, _amount, block.timestamp);
     }
 
     // Helper functions
