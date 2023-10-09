@@ -10,8 +10,10 @@ contract LoyaltyProgram is Ownable {
     mapping(string => address) public loyalIdToUser;
     OmniToken public omniToken;
     uint256 public tokenRatio;
-    mapping(address => uint256) public nonces;
+    //mapping(address => uint256) private nonces;
     string public commerceName;
+    string public commercePrefix;
+    string[] public usersLoyaltyIds;
 
     event Registered(address indexed user, string loyal_ID);
     event RewardsSent(address indexed to, uint256 amount);
@@ -19,15 +21,17 @@ contract LoyaltyProgram is Ownable {
     event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp);
     event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp);
 
-    constructor(address _omniTokenAddress, address _owner, string memory _commerceName) {
+    constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix) {
         omniToken = OmniToken(_omniTokenAddress);
         commerceName = _commerceName;
+        commercePrefix = _commercePrefix;
         transferOwnership(_owner); 
     }
 
     function register(string memory _loyalId, address _userAddress ) public onlyOwner {
         require(loyalIdToUser[_loyalId] == address(0), "Loyal ID already registered");
         loyalIdToUser[_loyalId] = _userAddress;
+        usersLoyaltyIds.push(_loyalId); 
         emit Registered(_userAddress, _loyalId);
     }
 
@@ -47,10 +51,6 @@ contract LoyaltyProgram is Ownable {
         require(omniToken.balanceOf(address(this)) >= rewardTokens, "Not enough tokens to send rewards");
         omniToken.transfer(recipient, rewardTokens);
         emit RewardsSent(recipient, rewardTokens);
-    }
-
-    function depositTokens(uint256 _amount) public onlyOwner {
-        require(omniToken.transferFrom(msg.sender, address(this), _amount), "Token transfer failed");
     }
 
     function adminTransferTokensToUser() public onlyOwner{
@@ -84,7 +84,6 @@ contract LoyaltyProgram is Ownable {
         emit UserTokenTransfer(_from, _to, _amount, block.timestamp);
     }
 
-    // Helper functions
     function prefixed(bytes32 hash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
@@ -92,16 +91,12 @@ contract LoyaltyProgram is Ownable {
     function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
         return ECDSA.recover(message, sig);
     }
-
-
     
-    //GETTERS
-    
+     function getUsersCount() public view returns (uint256) {
+        return usersLoyaltyIds.length;
+    }
 }
 
 
-    //Gasless functions
-
-    //function purchaseProduct()
 
 

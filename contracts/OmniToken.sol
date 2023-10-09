@@ -9,7 +9,7 @@ contract OmniToken is ERC20, ERC20Burnable, Ownable {
 
     mapping(address => bool) public trustedRelayers;
 
-    constructor() ERC20("OmniToken", "OMW") {
+    constructor() ERC20("OmniToken", "OMWTT") {
         _mint(msg.sender, 500000 * 10 ** decimals());
     }
 

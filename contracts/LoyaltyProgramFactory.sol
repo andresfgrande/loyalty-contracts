@@ -12,49 +12,72 @@ contract LoyaltyProgramFactory is Ownable {
     struct Commerce {
         string name;
         address loyaltyProgramAddress;
+        string prefix;
     }
 
     // Mapping from loyalty address to its commerce details
     mapping(address => Commerce) public commerceDetailsByAddress;
 
+    struct User {
+        string loyaltyId;
+        address loyaltyProgram;
+    }
+
+    // Mapping from user addres to user details
+    mapping(address => User) public userInfoByAddress;
+
+    // Mapping from user loyaltyId prefix to loyalty program address
+    mapping(string => address) public loyaltyProgramByPrefix;
+
     event LoyaltyProgramCreated(address indexed loyaltyProgram, address indexed commerceAddress, string commerceName);
+    event UserAdded(address indexed userAddress, string loyaltyId, address loyaltyProgram);
+    event TokensMinted(address indexed to, uint256 amount);
+    event TokensTransferred(address indexed loyaltyProgram, uint256 amount);
 
     constructor(address _omniTokenAddress) {
         omniToken = OmniToken(_omniTokenAddress);
     }
 
     //Create new loyalty program and store the address in array and in a mapping 
-    function createLoyaltyProgram(address commerceAddress, string memory commerceName) public onlyOwner returns (LoyaltyProgram) {
+    function createLoyaltyProgram(address commerceAddress, string memory commerceName, string memory commercePrefix) public onlyOwner returns (LoyaltyProgram ) {
         require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LoyaltyProgram already exists for this commerce address");
 
-        LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress, commerceName);
+        LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress, commerceName, commercePrefix);
 
         Commerce memory newCommerce = Commerce({
             name: commerceName,
-            loyaltyProgramAddress: address(loyaltyProgram)
+            loyaltyProgramAddress: address(loyaltyProgram),
+            prefix: commercePrefix
         });
 
         commerceDetailsByAddress[commerceAddress] = newCommerce;
-        commerceAddresses.push(commerceAddress);  // Push the commerce address to the array
+        commerceAddresses.push(commerceAddress);  
+        loyaltyProgramByPrefix[commercePrefix] = address(loyaltyProgram);
 
         emit LoyaltyProgramCreated(address(loyaltyProgram), commerceAddress, commerceName);
         return loyaltyProgram;
     }
 
-    // Envia tokens a LoyaltyProgram con la address del contrato
+    // Envia tokens ya existentes a LoyaltyProgram con la address del contrato
     function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner {
         require(omniToken.balanceOf(address(this)) >= _amount, "Not enough tokens in factory");
         omniToken.transfer(_loyaltyProgramAddress, _amount);
+
+        emit TokensTransferred(_loyaltyProgramAddress, _amount);
     }
 
     // Mint new tokens (en este caso se guardan en este contrato, se podria enviar diectamente a otros contratos)
     function mintTokens(uint256 _amount) public onlyOwner {
         omniToken.mint(address(this), _amount);
+
+        emit TokensMinted(address(this), _amount);
     }
 
-     // Mint new tokens (en este caso se guardan en este contrato, se podria enviar diectamente a otros contratos)
+     // Mint new tokens and send to loyalty program address
     function mintTokensToAddress(uint256 _amount, address _loyaltyProgramAddress) public onlyOwner {
         omniToken.mint(_loyaltyProgramAddress, _amount);
+
+        emit TokensMinted(_loyaltyProgramAddress, _amount);
     }
 
     // Function to get the count of registered commerce addresses
@@ -65,6 +88,42 @@ contract LoyaltyProgramFactory is Ownable {
     function getCommerceByAddress(address _commerceAddress) public view returns (string memory name, address loyaltyProgramAddress) {
         Commerce memory commerce = commerceDetailsByAddress[_commerceAddress];
         return (commerce.name, commerce.loyaltyProgramAddress);
+    }
+
+    // Function to add a new user to userInfoByAddress mapping
+    function addUserInfo(address userAddress, string memory loyaltyId) public onlyOwner {
+       
+        require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "User already exists");
+
+        string memory prefix = substring(loyaltyId, 0, 3);
+        address loyaltyProgramAddress = loyaltyProgramByPrefix[prefix];
+        
+        require(loyaltyProgramAddress != address(0), "Loyalty Program not found for the given prefix");
+        
+        User memory newUser = User({
+            loyaltyId: loyaltyId,
+            loyaltyProgram: loyaltyProgramAddress
+        });
+        
+        userInfoByAddress[userAddress] = newUser;
+
+        emit UserAdded(userAddress, loyaltyId, loyaltyProgramAddress);
+    }
+
+    // Helper function to get a substring from a string
+    function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(endIndex - startIndex);
+        for (uint i = startIndex; i < endIndex; i++) {
+            result[i - startIndex] = strBytes[i];
+        }
+        return string(result);
+    }
+
+     // Getter function to retrieve user information by address
+    function getUserInfoByAddress(address userAddress) public view returns (string memory loyaltyId, address loyaltyProgram) {
+        User memory user = userInfoByAddress[userAddress];
+        return (user.loyaltyId, user.loyaltyProgram);
     }
 
 }
