@@ -1,5 +1,6 @@
 const hre = require("hardhat");
 
+
 async function main() {
     const [deployer] = await hre.ethers.getSigners();
 
@@ -61,6 +62,16 @@ async function main() {
     console.log(`checking ${loyaltyProgramAddressAux} is trusted relayer...`);
     const isTrustedRelayerTx = await omniToken.isTrustedRelayer(loyaltyProgramAddressAux);
     console.log(`Is loyalty program ${loyaltyProgramAddressAux} a trusted relayer? -> ${isTrustedRelayerTx}`);
+
+
+    /************************************************************/
+    const weiValue = hre.ethers.parseEther("100");
+    console.log(weiValue);
+    const mintTx = await loyaltyProgramFactory.mintTokensToAddress(weiValue, loyaltyProgramAddressAux);
+    console.log(mintTx);
+
+    const loyaltyProgramBalance = await omniToken.balanceOf(loyaltyProgramAddressAux);
+    console.log(loyaltyProgramBalance);
 }
 
 main()
