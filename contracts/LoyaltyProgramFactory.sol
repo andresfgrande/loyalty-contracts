@@ -126,4 +126,8 @@ contract LoyaltyProgramFactory is Ownable {
         return (user.loyaltyId, user.loyaltyProgram);
     }
 
+    function addTrustedRelayer(address loyaltyProgramAddress) public onlyOwner{
+        omniToken.addTrustedRelayer(loyaltyProgramAddress);
+    }
+
 }

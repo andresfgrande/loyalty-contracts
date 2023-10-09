@@ -95,6 +95,7 @@ contract LoyaltyProgram is Ownable {
      function getUsersCount() public view returns (uint256) {
         return usersLoyaltyIds.length;
     }
+
 }
 
 

@@ -30,6 +30,10 @@ contract OmniToken is ERC20, ERC20Burnable, Ownable {
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
+
+    function isTrustedRelayer(address loyaltyProgramAddress) public view returns(bool){
+        return trustedRelayers[loyaltyProgramAddress];
+    }
 }
 
 /*
