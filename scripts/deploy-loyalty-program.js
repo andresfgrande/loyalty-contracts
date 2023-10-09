@@ -29,26 +29,20 @@ async function main() {
 
 
     // Step 4: Deploy a LoyaltyProgram using the factory
-   /// console.log("Deploying LoyaltyProgram...");
-
-   /// loyaltyProgram = await loyaltyProgramFactory.createLoyaltyProgram("0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199","Norma","NOR");
-    ///console.log("LoyaltyProgram deployed to:",  loyaltyProgram);
-
     console.log("Deploying LoyaltyProgram...");
+
+    loyaltyProgramFactory.on("LoyaltyProgramCreated", (loyaltyProgramAddress, commerceAddress, commerceName, event) => {
+        console.log("LoyaltyProgram created: ", loyaltyProgramAddress, commerceAddress, commerceName);
+        console.log("Loyalty program deployed to: ", loyaltyProgramAddress);
+    });
+
     const createLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram("0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199","Norma","NOR");
     const createLoyaltyProgramReceipt = await createLoyaltyProgramTx.wait();
-   /// const loyaltyProgramEvent = createLoyaltyProgramReceipt.events.find(e => e.event === "LoyaltyProgramCreated");
-    ///const loyaltyProgramAddress = loyaltyProgramEvent.args[0];
-    console.log("LoyaltyProgram deployed to:",  createLoyaltyProgramReceipt );
- 
-
-   
-
-    /*const deployLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram(deployer.address, "CommerceName");
-    const deployLoyaltyProgramReceipt = await deployLoyaltyProgramTx.wait();
-    const loyaltyProgramEvent = deployLoyaltyProgramReceipt.events.find(e => e.event === "LoyaltyProgramCreated");
-    const loyaltyProgramAddress = loyaltyProgramEvent.args.loyaltyProgram;
-    console.log("LoyaltyProgram deployed to:", loyaltyProgramAddress);*/
+    if (createLoyaltyProgramReceipt.status === 1) { 
+        console.log("Loyalty program created successfully.");
+    } else {
+        console.error("Loyalty program creation failed.");
+    }
     
     /*
     // Step 5: Add trusted relayer to OmniToken: the address of the created LoyaltyProgram
