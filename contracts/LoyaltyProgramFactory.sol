@@ -2,10 +2,14 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OmniToken.sol";  
 import "./LoyaltyProgram.sol";  
 
 contract LoyaltyProgramFactory is Ownable {
+
+    using SafeERC20 for OmniToken; 
+
     OmniToken public omniToken;
     address[] public commerceAddresses;
 
@@ -40,7 +44,7 @@ contract LoyaltyProgramFactory is Ownable {
 
     //Create new loyalty program and store the address in array and in a mapping 
     function createLoyaltyProgram(address commerceAddress, string memory commerceName, string memory commercePrefix) public onlyOwner returns (LoyaltyProgram ) {
-        require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LoyaltyProgram already exists for this commerce address");
+        require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LoyaltyProgram already exists for this address");
 
         LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress, commerceName, commercePrefix);
 
@@ -59,11 +63,12 @@ contract LoyaltyProgramFactory is Ownable {
     }
 
     // Envia tokens ya existentes a LoyaltyProgram con la address del contrato
-    function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner {
+    function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner returns (bool){
         require(omniToken.balanceOf(address(this)) >= _amount, "Not enough tokens in factory");
-        omniToken.transfer(_loyaltyProgramAddress, _amount);
+        omniToken.safeTransfer(_loyaltyProgramAddress, _amount);
 
         emit TokensTransferred(_loyaltyProgramAddress, _amount);
+        return true;
     }
 
     // Mint new tokens (en este caso se guardan en este contrato, se podria enviar diectamente a otros contratos)
@@ -91,14 +96,13 @@ contract LoyaltyProgramFactory is Ownable {
     }
 
     // Function to add a new user to userInfoByAddress mapping
-    function addUserInfo(address userAddress, string memory loyaltyId) public onlyOwner {
+    function addUserInfo(address userAddress, string memory loyaltyId, string memory loyaltyPrefix) public onlyOwner {
        
         require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "User already exists");
 
-        string memory prefix = substring(loyaltyId, 0, 3);
-        address loyaltyProgramAddress = loyaltyProgramByPrefix[prefix];
+        address loyaltyProgramAddress = loyaltyProgramByPrefix[loyaltyPrefix];
         
-        require(loyaltyProgramAddress != address(0), "Loyalty Program not found for the given prefix");
+        require(loyaltyProgramAddress != address(0), "Loyalty Program not found");
         
         User memory newUser = User({
             loyaltyId: loyaltyId,
@@ -108,16 +112,6 @@ contract LoyaltyProgramFactory is Ownable {
         userInfoByAddress[userAddress] = newUser;
 
         emit UserAdded(userAddress, loyaltyId, loyaltyProgramAddress);
-    }
-
-    // Helper function to get a substring from a string
-    function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
-        bytes memory strBytes = bytes(str);
-        bytes memory result = new bytes(endIndex - startIndex);
-        for (uint i = startIndex; i < endIndex; i++) {
-            result[i - startIndex] = strBytes[i];
-        }
-        return string(result);
     }
 
      // Getter function to retrieve user information by address

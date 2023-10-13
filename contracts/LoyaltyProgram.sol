@@ -9,6 +9,7 @@ import "./OmniToken.sol";
 contract LoyaltyProgram is Ownable {
 
     using SafeERC20 for OmniToken; 
+
     mapping(string => address) public loyalIdToUser;
     OmniToken public omniToken;
     uint256 public tokenRatio;
