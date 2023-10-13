@@ -30,6 +30,10 @@ contract LoyaltyProgramFactory is Ownable {
     // Mapping from user addres to user details
     mapping(address => User) public userInfoByAddress;
 
+    // Mapping from loyalId to user Address
+    mapping(string => address) public addressByLoyaltyId;
+
+
     // Mapping from user loyaltyId prefix to loyalty program address
     mapping(string => address) public loyaltyProgramByPrefix;
 
@@ -97,22 +101,19 @@ contract LoyaltyProgramFactory is Ownable {
 
     // Function to add a new user to userInfoByAddress mapping
     function addUserInfo(address userAddress, string memory loyaltyId, string memory loyaltyPrefix) public onlyOwner {
-       
         require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "User already exists");
-
+        require(addressByLoyaltyId[loyaltyId] == address(0), "Loyalty ID already exists");
         address loyaltyProgramAddress = loyaltyProgramByPrefix[loyaltyPrefix];
-        
         require(loyaltyProgramAddress != address(0), "Loyalty Program not found");
-        
         User memory newUser = User({
             loyaltyId: loyaltyId,
             loyaltyProgram: loyaltyProgramAddress
         });
-        
         userInfoByAddress[userAddress] = newUser;
-
+        addressByLoyaltyId[loyaltyId] = userAddress;
         emit UserAdded(userAddress, loyaltyId, loyaltyProgramAddress);
     }
+
 
      // Getter function to retrieve user information by address
     function getUserInfoByAddress(address userAddress) public view returns (string memory loyaltyId, address loyaltyProgram) {
