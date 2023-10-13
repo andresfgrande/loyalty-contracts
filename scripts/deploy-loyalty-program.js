@@ -38,7 +38,7 @@ async function main() {
         loyaltyProgramAddressAux = loyaltyProgramAddress;
     });
 
-    const createLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram("0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199","Norma","NOR");
+    const createLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram("0x3e00DE4e512fcB4922842145ca425a41962d7e11","Norma","NORM");
     const createLoyaltyProgramReceipt = await createLoyaltyProgramTx.wait();
     if (createLoyaltyProgramReceipt.status === 1) { 
         console.log("Loyalty program created successfully.");

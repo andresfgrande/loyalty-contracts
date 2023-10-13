@@ -35,12 +35,3 @@ contract OmniToken is ERC20, ERC20Burnable, Ownable {
         return trustedRelayers[loyaltyProgramAddress];
     }
 }
-
-/*
-deploy token
-deploy loyalty program factory pasando como parametro la dirección del token
-cambio de owner del token:  loyalty program factory nuevo owner (habra 1 factory)
-deploy de Loyalty program mediante el factory (Habra N loyalty programs) 
-add trusted relayer to omni token: the address of the loyalty program
-*/
-

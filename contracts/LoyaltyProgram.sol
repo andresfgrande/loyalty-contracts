@@ -3,9 +3,12 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OmniToken.sol";
 
 contract LoyaltyProgram is Ownable {
+
+    using SafeERC20 for OmniToken; 
 
     mapping(string => address) public loyalIdToUser;
     OmniToken public omniToken;
@@ -28,11 +31,13 @@ contract LoyaltyProgram is Ownable {
         transferOwnership(_owner); 
     }
 
-    function register(string memory _loyalId, address _userAddress ) public onlyOwner {
+    function register(string memory _loyalId, address _userAddress ) public onlyOwner returns (bool){
         require(loyalIdToUser[_loyalId] == address(0), "Loyal ID already registered");
         loyalIdToUser[_loyalId] = _userAddress;
         usersLoyaltyIds.push(_loyalId); 
         emit Registered(_userAddress, _loyalId);
+
+        return true;
     }
 
     function getUserAddress(string memory _loyalId) public view returns (address) {
@@ -45,12 +50,15 @@ contract LoyaltyProgram is Ownable {
         emit TokenRatioUpdated(_newRatio);
     }
 
-    function sendRewards(string memory _loyalId, uint256 _purchaseValue) public onlyOwner {
+    function sendRewards(string memory _loyalId, uint256 _purchaseValue) public onlyOwner returns (bool) {
         address recipient = getUserAddress(_loyalId);
         uint256 rewardTokens = _purchaseValue * tokenRatio;
         require(omniToken.balanceOf(address(this)) >= rewardTokens, "Not enough tokens to send rewards");
-        omniToken.transfer(recipient, rewardTokens);
+        //omniToken.transfer(recipient, rewardTokens);
+        omniToken.safeTransfer(recipient, rewardTokens); 
         emit RewardsSent(recipient, rewardTokens);
+
+        return true;
     }
 
     function adminTransferTokensToUser() public onlyOwner{
@@ -63,11 +71,13 @@ contract LoyaltyProgram is Ownable {
         address _spender,
         uint256 _value,
         bytes memory _signature
-    ) public onlyOwner {
+    ) public onlyOwner returns (bool){
         bytes32 message = prefixed(keccak256(abi.encodePacked(_owner, _spender, _value)));
         require(recoverSigner(message, _signature) == _owner, "Invalid signature");
 
-        require(omniToken.approveFor(_owner, _spender, _value), "Approval failed");
+        bool success = omniToken.approveFor(_owner, _spender, _value);
+        require(success, "Approval failed");
+        return success;
     }
 
     //gasless
@@ -76,12 +86,15 @@ contract LoyaltyProgram is Ownable {
         address _to,
         uint256 _amount,
         bytes memory _signature
-    ) public onlyOwner {
+    ) public onlyOwner returns (bool){
         bytes32 message = prefixed(keccak256(abi.encodePacked(_from, _to, _amount)));
         require(recoverSigner(message, _signature) == _from, "Invalid signature");
 
-        require(omniToken.transferFrom(_from, _to, _amount), "Token transfer failed");
+        //require(omniToken.transferFrom(_from, _to, _amount), "Token transfer failed");
+        omniToken.safeTransferFrom(_from, _to, _amount);
         emit UserTokenTransfer(_from, _to, _amount, block.timestamp);
+
+        return true;
     }
 
     function prefixed(bytes32 hash) internal pure returns (bytes32) {
