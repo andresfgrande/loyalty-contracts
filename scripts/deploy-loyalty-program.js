@@ -29,13 +29,13 @@ async function main() {
     console.log("/***** Ownership transferred to:", await omniToken.owner(),"*****/");
 
 
-    // Step 4: Deploy a LoyaltyProgram using the factory --> OK
+    /*// Step 4: Deploy a LoyaltyProgram using the factory --> OK
     console.log("Deploying LoyaltyProgram...");
     var loyaltyProgramAddressAux = '-';
     loyaltyProgramFactory.on("LoyaltyProgramCreated", (loyaltyProgramAddress, commerceAddress, commerceName, event) => {
         console.log("LoyaltyProgram created: ", loyaltyProgramAddress, commerceAddress, commerceName);
-        console.log("/****** Loyalty program deployed to: ", loyaltyProgramAddress, "*****/");
-        loyaltyProgramAddressAux = loyaltyProgramAddress;
+        console.log("/****** Loyalty program deployed to: ", loyaltyProgramAddress, "*****///");
+  /*      loyaltyProgramAddressAux = loyaltyProgramAddress;
     });
 
     const createLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram("0x3e00DE4e512fcB4922842145ca425a41962d7e11","Norma","NORM");
@@ -48,6 +48,42 @@ async function main() {
     
     // Step 5: Add trusted relayer to OmniToken: the address of the created LoyaltyProgram -->OK
     console.log("Adding LoyaltyProgram as a trusted relayer in OmniToken...");
+    console.log("/***** Trusted relayer: ", loyaltyProgramAddressAux, "*****///");
+ /*   const addTrustedRelayerTx = await loyaltyProgramFactory.addTrustedRelayer(loyaltyProgramAddressAux);
+    const addTrustedRelayeReceipt = await addTrustedRelayerTx.wait();
+
+    if (addTrustedRelayeReceipt.status === 1) { 
+        console.log("Added trusted relayer successfully.");
+    } else {
+        console.error("Added trusted relayer failed.");
+    }*/
+
+    // Step 4: Deploy a LoyaltyProgram using the factory --> OK
+    console.log("Deploying LoyaltyProgram...");
+
+    // Create a promise to wait for the event
+    const loyaltyProgramAddressPromise = new Promise((resolve, reject) => {
+        loyaltyProgramFactory.on("LoyaltyProgramCreated", (loyaltyProgramAddress, commerceAddress, commerceName, event) => {
+            console.log("LoyaltyProgram created: ", loyaltyProgramAddress, commerceAddress, commerceName);
+            console.log("/****** Loyalty program deployed to: ", loyaltyProgramAddress, "*****/");
+            resolve(loyaltyProgramAddress);
+        });
+    });
+
+    const createLoyaltyProgramTx = await loyaltyProgramFactory.createLoyaltyProgram("0x3e00DE4e512fcB4922842145ca425a41962d7e11","Norma","NORM");
+    const createLoyaltyProgramReceipt = await createLoyaltyProgramTx.wait();
+
+    if (createLoyaltyProgramReceipt.status !== 1) {
+        console.error("Loyalty program creation failed.");
+        return;
+    }
+    console.log("Loyalty program created successfully.");
+
+    // Wait for the event to fire and get the address
+    const loyaltyProgramAddressAux = await loyaltyProgramAddressPromise;
+
+    // Step 5: Add trusted relayer to OmniToken: the address of the created LoyaltyProgram -->OK
+    console.log("Adding LoyaltyProgram as a trusted relayer in OmniToken...");
     console.log("/***** Trusted relayer: ", loyaltyProgramAddressAux, "*****/");
     const addTrustedRelayerTx = await loyaltyProgramFactory.addTrustedRelayer(loyaltyProgramAddressAux);
     const addTrustedRelayeReceipt = await addTrustedRelayerTx.wait();
@@ -57,6 +93,7 @@ async function main() {
     } else {
         console.error("Added trusted relayer failed.");
     }
+
 
     // Step 6: is trusted relayer? -->OK
     console.log(`checking ${loyaltyProgramAddressAux} is trusted relayer...`);

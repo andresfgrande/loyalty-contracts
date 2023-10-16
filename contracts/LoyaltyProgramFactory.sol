@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+//import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OmniToken.sol";  
 import "./LoyaltyProgram.sol";  
 
 contract LoyaltyProgramFactory is Ownable {
 
-    using SafeERC20 for OmniToken; 
+    //using SafeERC20 for OmniToken; 
 
     OmniToken public omniToken;
     address[] public commerceAddresses;
@@ -33,7 +33,6 @@ contract LoyaltyProgramFactory is Ownable {
     // Mapping from loyalId to user Address
     mapping(string => address) public addressByLoyaltyId;
 
-
     // Mapping from user loyaltyId prefix to loyalty program address
     mapping(string => address) public loyaltyProgramByPrefix;
 
@@ -48,7 +47,7 @@ contract LoyaltyProgramFactory is Ownable {
 
     //Create new loyalty program and store the address in array and in a mapping 
     function createLoyaltyProgram(address commerceAddress, string memory commerceName, string memory commercePrefix) public onlyOwner returns (LoyaltyProgram ) {
-        require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LoyaltyProgram already exists for this address");
+        require(commerceDetailsByAddress[commerceAddress].loyaltyProgramAddress == address(0), "LPE"); //Loyalty program exists
 
         LoyaltyProgram loyaltyProgram = new LoyaltyProgram(address(omniToken), commerceAddress, commerceName, commercePrefix);
 
@@ -66,21 +65,22 @@ contract LoyaltyProgramFactory is Ownable {
         return loyaltyProgram;
     }
 
-    // Envia tokens ya existentes a LoyaltyProgram con la address del contrato
-    function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner returns (bool){
-        require(omniToken.balanceOf(address(this)) >= _amount, "Not enough tokens in factory");
+  // Envia tokens ya existentes a LoyaltyProgram con la address del contrato
+   /* function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner returns (bool){
+        require(omniToken.balanceOf(address(this)) >= _amount, "NT"); //Not enough tokens
         omniToken.safeTransfer(_loyaltyProgramAddress, _amount);
 
         emit TokensTransferred(_loyaltyProgramAddress, _amount);
         return true;
-    }
+    }*/
 
+  
     // Mint new tokens (en este caso se guardan en este contrato, se podria enviar diectamente a otros contratos)
-    function mintTokens(uint256 _amount) public onlyOwner {
+    /*function mintTokens(uint256 _amount) public onlyOwner {
         omniToken.mint(address(this), _amount);
 
         emit TokensMinted(address(this), _amount);
-    }
+    }*/
 
      // Mint new tokens and send to loyalty program address
     function mintTokensToAddress(uint256 _amount, address _loyaltyProgramAddress) public onlyOwner {
@@ -101,10 +101,10 @@ contract LoyaltyProgramFactory is Ownable {
 
     // Function to add a new user to userInfoByAddress mapping
     function addUserInfo(address userAddress, string memory loyaltyId, string memory loyaltyPrefix) public onlyOwner {
-        require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "User already exists");
-        require(addressByLoyaltyId[loyaltyId] == address(0), "Loyalty ID already exists");
+        require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "UE"); //User exists
+        require(addressByLoyaltyId[loyaltyId] == address(0), "LIDE"); //Loyalty ID exists
         address loyaltyProgramAddress = loyaltyProgramByPrefix[loyaltyPrefix];
-        require(loyaltyProgramAddress != address(0), "Loyalty Program not found");
+        require(loyaltyProgramAddress != address(0), "LPNF"); //Loyalty program not found
         User memory newUser = User({
             loyaltyId: loyaltyId,
             loyaltyProgram: loyaltyProgramAddress

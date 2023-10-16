@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -22,7 +22,7 @@ contract OmniToken is ERC20, ERC20Burnable, Ownable {
     }
 
     function approveFor(address owner, address spender, uint256 value) external returns (bool) {
-        require(trustedRelayers[msg.sender], "Not a trusted relayer");
+        require(trustedRelayers[msg.sender], "NTR"); //Not a trusted relayer
         _approve(owner, spender, value);
         return true;
     }

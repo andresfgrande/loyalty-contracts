@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -20,19 +20,20 @@ contract LoyaltyProgram is Ownable {
 
     event Registered(address indexed user, string loyal_ID);
     event RewardsSent(address indexed to, uint256 amount);
-    event TokenRatioUpdated(uint256 newRatio);
     event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp);
     event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp);
+    event AdminTokenTransfer(address indexed recipient, uint256 amount);
 
     constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix) {
         omniToken = OmniToken(_omniTokenAddress);
         commerceName = _commerceName;
         commercePrefix = _commercePrefix;
+        tokenRatio = 1;
         transferOwnership(_owner); 
     }
 
     function register(string memory _loyalId, address _userAddress ) public onlyOwner returns (bool){
-        require(loyalIdToUser[_loyalId] == address(0), "Loyal ID already registered");
+        require(loyalIdToUser[_loyalId] == address(0), "LIDF"); //Loyal Id found
         loyalIdToUser[_loyalId] = _userAddress;
         usersLoyaltyIds.push(_loyalId); 
         emit Registered(_userAddress, _loyalId);
@@ -41,28 +42,29 @@ contract LoyaltyProgram is Ownable {
     }
 
     function getUserAddress(string memory _loyalId) public view returns (address) {
-        require(loyalIdToUser[_loyalId] != address(0), "Loyal ID not registered");
+        require(loyalIdToUser[_loyalId] != address(0), "LIDNF"); //Loyal Id not found
         return loyalIdToUser[_loyalId];
     }
 
     function setTokenRatio(uint256 _newRatio) public onlyOwner {
         tokenRatio = _newRatio;
-        emit TokenRatioUpdated(_newRatio);
     }
 
     function sendRewards(string memory _loyalId, uint256 _purchaseValue) public onlyOwner returns (bool) {
         address recipient = getUserAddress(_loyalId);
-        uint256 rewardTokens = _purchaseValue * tokenRatio;
-        require(omniToken.balanceOf(address(this)) >= rewardTokens, "Not enough tokens to send rewards");
-        //omniToken.transfer(recipient, rewardTokens);
-        omniToken.safeTransfer(recipient, rewardTokens); 
+        uint256 rewardTokens = _purchaseValue * tokenRatio * 10**18;
+        require(omniToken.balanceOf(address(this)) >= rewardTokens, "NT"); //Not enough tokens in contract
+        omniToken.safeTransfer(recipient, rewardTokens);
         emit RewardsSent(recipient, rewardTokens);
-
         return true;
     }
 
-    function adminTransferTokensToUser() public onlyOwner{
-        //TODO
+    function adminTransferTokensToUser(string memory _loyalId, uint256 _amount) public onlyOwner {
+ 
+        address recipient = getUserAddress(_loyalId);
+        require(omniToken.balanceOf(address(this)) >= _amount, "NT"); //Not enough tokens in contract
+        omniToken.safeTransfer(recipient, _amount);
+        emit AdminTokenTransfer(recipient, _amount);
     }
 
     //gasless
@@ -73,10 +75,9 @@ contract LoyaltyProgram is Ownable {
         bytes memory _signature
     ) public onlyOwner returns (bool){
         bytes32 message = prefixed(keccak256(abi.encodePacked(_owner, _spender, _value)));
-        require(recoverSigner(message, _signature) == _owner, "Invalid signature");
-
+        require(recoverSigner(message, _signature) == _owner, "IS"); //Invalid signature
         bool success = omniToken.approveFor(_owner, _spender, _value);
-        require(success, "Approval failed");
+        require(success, "AF");
         return success;
     }
 
@@ -88,12 +89,9 @@ contract LoyaltyProgram is Ownable {
         bytes memory _signature
     ) public onlyOwner returns (bool){
         bytes32 message = prefixed(keccak256(abi.encodePacked(_from, _to, _amount)));
-        require(recoverSigner(message, _signature) == _from, "Invalid signature");
-
-        //require(omniToken.transferFrom(_from, _to, _amount), "Token transfer failed");
+        require(recoverSigner(message, _signature) == _from, "IS"); //Invalid signature
         omniToken.safeTransferFrom(_from, _to, _amount);
         emit UserTokenTransfer(_from, _to, _amount, block.timestamp);
-
         return true;
     }
 
