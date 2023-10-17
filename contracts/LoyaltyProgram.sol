@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -60,11 +60,15 @@ contract LoyaltyProgram is Ownable {
     }
 
     function adminTransferTokensToUser(string memory _loyalId, uint256 _amount) public onlyOwner {
- 
         address recipient = getUserAddress(_loyalId);
         require(omniToken.balanceOf(address(this)) >= _amount, "NT"); //Not enough tokens in contract
         omniToken.safeTransfer(recipient, _amount);
         emit AdminTokenTransfer(recipient, _amount);
+    }
+
+    //gasless
+    function purchaseProduct(){
+        //TODO
     }
 
     //gasless

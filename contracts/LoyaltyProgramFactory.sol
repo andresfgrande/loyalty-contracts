@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-//import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./OmniToken.sol";  
 import "./LoyaltyProgram.sol";  
 
 contract LoyaltyProgramFactory is Ownable {
 
-    //using SafeERC20 for OmniToken; 
-
+     using SafeERC20 for OmniToken; 
+    
     OmniToken public omniToken;
     address[] public commerceAddresses;
 
@@ -64,23 +64,6 @@ contract LoyaltyProgramFactory is Ownable {
         emit LoyaltyProgramCreated(address(loyaltyProgram), commerceAddress, commerceName);
         return loyaltyProgram;
     }
-
-  // Envia tokens ya existentes a LoyaltyProgram con la address del contrato
-   /* function fundLoyaltyProgram(address _loyaltyProgramAddress, uint256 _amount) public onlyOwner returns (bool){
-        require(omniToken.balanceOf(address(this)) >= _amount, "NT"); //Not enough tokens
-        omniToken.safeTransfer(_loyaltyProgramAddress, _amount);
-
-        emit TokensTransferred(_loyaltyProgramAddress, _amount);
-        return true;
-    }*/
-
-  
-    // Mint new tokens (en este caso se guardan en este contrato, se podria enviar diectamente a otros contratos)
-    /*function mintTokens(uint256 _amount) public onlyOwner {
-        omniToken.mint(address(this), _amount);
-
-        emit TokensMinted(address(this), _amount);
-    }*/
 
      // Mint new tokens and send to loyalty program address
     function mintTokensToAddress(uint256 _amount, address _loyaltyProgramAddress) public onlyOwner {
