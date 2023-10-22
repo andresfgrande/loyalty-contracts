@@ -36,10 +36,9 @@ contract LoyaltyProgramFactory is Ownable {
     // Mapping from user loyaltyId prefix to loyalty program address
     mapping(string => address) public loyaltyProgramByPrefix;
 
-    event LoyaltyProgramCreated(address indexed loyaltyProgram, address indexed commerceAddress, string commerceName);
-    event UserAdded(address indexed userAddress, string loyaltyId, address loyaltyProgram);
-    event TokensMinted(address indexed to, uint256 amount);
-    event TokensTransferred(address indexed loyaltyProgram, uint256 amount);
+    event LoyaltyProgramCreated(address indexed factory, address indexed loyaltyProgram, address indexed commerceAddress, string commerceName);
+    event UserAdded(address indexed factory, address indexed loyaltyProgram, address indexed userAddress, string loyaltyId);
+    event TokensMintedTo(address indexed factory, address indexed to, uint256 amount);
 
     constructor(address _omniTokenAddress) {
         omniToken = OmniToken(_omniTokenAddress);
@@ -61,15 +60,14 @@ contract LoyaltyProgramFactory is Ownable {
         commerceAddresses.push(commerceAddress);  
         loyaltyProgramByPrefix[commercePrefix] = address(loyaltyProgram);
 
-        emit LoyaltyProgramCreated(address(loyaltyProgram), commerceAddress, commerceName);
+        emit LoyaltyProgramCreated(address(this), address(loyaltyProgram), commerceAddress, commerceName);
         return loyaltyProgram;
     }
 
      // Mint new tokens and send to loyalty program address
     function mintTokensToAddress(uint256 _amount, address _loyaltyProgramAddress) public onlyOwner {
         omniToken.mint(_loyaltyProgramAddress, _amount);
-
-        emit TokensMinted(_loyaltyProgramAddress, _amount);
+        emit TokensMintedTo(address(this), _loyaltyProgramAddress, _amount);
     }
 
     // Function to get the count of registered commerce addresses
@@ -94,11 +92,10 @@ contract LoyaltyProgramFactory is Ownable {
         });
         userInfoByAddress[userAddress] = newUser;
         addressByLoyaltyId[loyaltyId] = userAddress;
-        emit UserAdded(userAddress, loyaltyId, loyaltyProgramAddress);
+       
+        emit UserAdded(address(this), loyaltyProgramAddress, userAddress, loyaltyId);
     }
 
-
-     // Getter function to retrieve user information by address
     function getUserInfoByAddress(address userAddress) public view returns (string memory loyaltyId, address loyaltyProgram) {
         User memory user = userInfoByAddress[userAddress];
         return (user.loyaltyId, user.loyaltyProgram);

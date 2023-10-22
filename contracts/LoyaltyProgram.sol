@@ -4,11 +4,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./OmniToken.sol";
 
 contract LoyaltyProgram is Ownable {
 
     using SafeERC20 for OmniToken; 
+    using SafeMath for uint256;
 
     mapping(string => address) public loyalIdToUser;
     OmniToken public omniToken;
@@ -17,11 +19,14 @@ contract LoyaltyProgram is Ownable {
     string public commerceName;
     string public commercePrefix;
     string[] public usersLoyaltyIds;
+    uint256 public constant productRatio = 80;
+    uint256 public constant userRatio = 20;
 
     event Registered(address indexed user, string loyal_ID, uint256 timestamp); 
     event RewardsSent(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
     event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
     event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp); 
+    event RedeemProduct(address indexed from, address _toProductOwner, address indexed _toUserOwner, uint256 amount, uint256 timestamp); 
 
     constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix) {
         omniToken = OmniToken(_omniTokenAddress);
@@ -65,7 +70,29 @@ contract LoyaltyProgram is Ownable {
         emit UserTokenTransfer(address(this), recipient, _amount, block.timestamp);
     }
 
-   
+    //gasless
+    function redeemProduct(
+        address _from,
+        address _toProductCommerceAddress,
+        address _toUserCommerceAddress,
+        uint256 _amount,
+        bytes memory _signature
+    ) public onlyOwner returns (bool){
+        bytes32 message = prefixed(keccak256(abi.encodePacked(_from, _toProductCommerceAddress, _toUserCommerceAddress, _amount)));
+        require(recoverSigner(message, _signature) == _from, "IS"); //Invalid signature
+
+        if (_toProductCommerceAddress == _toUserCommerceAddress) {
+            omniToken.safeTransferFrom(_from, _toProductCommerceAddress, _amount);
+        } else {
+            uint256 productAmount = _amount.mul(80).div(100); // Calculate % for product owner
+            uint256 userAmount = _amount.mul(20).div(100);    // Calculate % for user owner
+            omniToken.safeTransferFrom(_from, _toProductCommerceAddress, productAmount);
+            omniToken.safeTransferFrom(_from, _toUserCommerceAddress, userAmount);
+        }
+
+        emit RedeemProduct(_from, _toProductCommerceAddress, _toUserCommerceAddress, _amount, block.timestamp); 
+        return true;
+    }
 
     //gasless
     function gaslessApprove(
@@ -77,7 +104,7 @@ contract LoyaltyProgram is Ownable {
         bytes32 message = prefixed(keccak256(abi.encodePacked(_owner, _spender, _value)));
         require(recoverSigner(message, _signature) == _owner, "IS"); //Invalid signature
         bool success = omniToken.approveFor(_owner, _spender, _value);
-        require(success, "AF");
+        require(success, "AF"); //Approval failed
         emit GaslessApproval(_owner, _spender, _value, block.timestamp);
         return success;
     }
