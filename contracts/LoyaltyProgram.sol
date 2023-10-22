@@ -18,11 +18,10 @@ contract LoyaltyProgram is Ownable {
     string public commercePrefix;
     string[] public usersLoyaltyIds;
 
-    event Registered(address indexed user, string loyal_ID);
-    event RewardsSent(address indexed to, uint256 amount);
-    event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp);
-    event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp);
-    event AdminTokenTransfer(address indexed recipient, uint256 amount);
+    event Registered(address indexed user, string loyal_ID, uint256 timestamp); 
+    event RewardsSent(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
+    event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
+    event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp); 
 
     constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix) {
         omniToken = OmniToken(_omniTokenAddress);
@@ -36,7 +35,7 @@ contract LoyaltyProgram is Ownable {
         require(loyalIdToUser[_loyalId] == address(0), "LIDF"); //Loyal Id found
         loyalIdToUser[_loyalId] = _userAddress;
         usersLoyaltyIds.push(_loyalId); 
-        emit Registered(_userAddress, _loyalId);
+        emit Registered(_userAddress, _loyalId, block.timestamp);
 
         return true;
     }
@@ -55,7 +54,7 @@ contract LoyaltyProgram is Ownable {
         uint256 rewardTokens = _purchaseValue * tokenRatio * 10**18;
         require(omniToken.balanceOf(address(this)) >= rewardTokens, "NT"); //Not enough tokens in contract
         omniToken.safeTransfer(recipient, rewardTokens);
-        emit RewardsSent(recipient, rewardTokens);
+        emit RewardsSent(address(this), recipient, rewardTokens, block.timestamp);
         return true;
     }
 
@@ -63,13 +62,10 @@ contract LoyaltyProgram is Ownable {
         address recipient = getUserAddress(_loyalId);
         require(omniToken.balanceOf(address(this)) >= _amount, "NT"); //Not enough tokens in contract
         omniToken.safeTransfer(recipient, _amount);
-        emit AdminTokenTransfer(recipient, _amount);
+        emit UserTokenTransfer(address(this), recipient, _amount, block.timestamp);
     }
 
-    //gasless
-    function purchaseProduct(){
-        //TODO
-    }
+   
 
     //gasless
     function gaslessApprove(
@@ -82,6 +78,7 @@ contract LoyaltyProgram is Ownable {
         require(recoverSigner(message, _signature) == _owner, "IS"); //Invalid signature
         bool success = omniToken.approveFor(_owner, _spender, _value);
         require(success, "AF");
+        emit GaslessApproval(_owner, _spender, _value, block.timestamp);
         return success;
     }
 

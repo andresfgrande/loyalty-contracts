@@ -15,6 +15,11 @@ module.exports = {
       accounts: [process.env.ACCOUNT_PRIVATE_KEY],  
       chainId: 80001,  
     },
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_SEPOLIA}`,  
+      accounts: [process.env.ACCOUNT_PRIVATE_KEY],  
+      chainId: 11155111,  
+    },
   },
 };
 
