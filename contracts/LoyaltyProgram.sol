@@ -19,8 +19,8 @@ contract LoyaltyProgram is Ownable {
     string public commerceName;
     string public commercePrefix;
     string[] public usersLoyaltyIds;
-    uint256 public constant productRatio = 80;
-    uint256 public constant userRatio = 20;
+    uint256 public constant PRODUCT_RATIO = 80;
+    uint256 public constant COMMERCE_RATIO = 20;
 
     event Registered(address indexed user, string loyal_ID, uint256 timestamp); 
     event RewardsSent(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
@@ -84,8 +84,8 @@ contract LoyaltyProgram is Ownable {
         if (_toProductCommerceAddress == _toUserCommerceAddress) {
             omniToken.safeTransferFrom(_from, _toProductCommerceAddress, _amount);
         } else {
-            uint256 productAmount = _amount.mul(80).div(100); // Calculate % for product owner
-            uint256 userAmount = _amount.mul(20).div(100);    // Calculate % for user owner
+            uint256 productAmount = _amount.mul(PRODUCT_RATIO).div(100); // Calculate % for product owner
+            uint256 userAmount = _amount.mul(COMMERCE_RATIO).div(100);    // Calculate % for user owner
             omniToken.safeTransferFrom(_from, _toProductCommerceAddress, productAmount);
             omniToken.safeTransferFrom(_from, _toUserCommerceAddress, userAmount);
         }
