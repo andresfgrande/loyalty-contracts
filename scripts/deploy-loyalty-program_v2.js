@@ -33,7 +33,8 @@ async function main() {
 
      // Create a promise to wait for the event
      const loyaltyProgramAddressPromise = new Promise((resolve, reject) => {
-         loyaltyProgramFactory.on("LoyaltyProgramCreated", (loyaltyProgramAddress, commerceAddress, commerceName, event) => {
+         loyaltyProgramFactory.on("LoyaltyProgramCreated", (factoryAddress, loyaltyProgramAddress, commerceAddress, commerceName, timestamp, event) => {
+            
              console.log("LoyaltyProgram created: ", loyaltyProgramAddress, commerceAddress, commerceName);
              console.log("/****** Loyalty program deployed to: ", loyaltyProgramAddress, "*****/");
              resolve(loyaltyProgramAddress);

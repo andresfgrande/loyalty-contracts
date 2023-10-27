@@ -36,9 +36,10 @@ contract LoyaltyProgramFactory is Ownable {
     // Mapping from user loyaltyId prefix to loyalty program address
     mapping(string => address) public loyaltyProgramByPrefix;
 
-    event LoyaltyProgramCreated(address indexed factory, address indexed loyaltyProgram, address indexed commerceAddress, string commerceName);
-    event UserAdded(address indexed factory, address indexed loyaltyProgram, address indexed userAddress, string loyaltyId);
-    event TokensMintedTo(address indexed factory, address indexed to, uint256 amount);
+    event LoyaltyProgramCreated(address indexed factory, address indexed loyaltyProgram, 
+                                address indexed commerceAddress, string commerceName, uint256 timestamp);
+    event UserAdded(address indexed factory, address indexed loyaltyProgram, address indexed userAddress, string loyaltyId, uint256 timestamp);
+    event TokensMintedTo(address indexed factory, address indexed to, uint256 amount, uint256 timestamp);
 
     constructor(address _omniTokenAddress) {
         omniToken = OmniToken(_omniTokenAddress);
@@ -60,14 +61,14 @@ contract LoyaltyProgramFactory is Ownable {
         commerceAddresses.push(commerceAddress);  
         loyaltyProgramByPrefix[commercePrefix] = address(loyaltyProgram);
 
-        emit LoyaltyProgramCreated(address(this), address(loyaltyProgram), commerceAddress, commerceName);
+        emit LoyaltyProgramCreated(address(this), address(loyaltyProgram), commerceAddress, commerceName, block.timestamp);
         return loyaltyProgram;
     }
 
      // Mint new tokens and send to loyalty program address
     function mintTokensToAddress(uint256 _amount, address _loyaltyProgramAddress) public onlyOwner {
         omniToken.mint(_loyaltyProgramAddress, _amount);
-        emit TokensMintedTo(address(this), _loyaltyProgramAddress, _amount);
+        emit TokensMintedTo(address(this), _loyaltyProgramAddress, _amount, block.timestamp);
     }
 
     // Function to get the count of registered commerce addresses
@@ -93,7 +94,7 @@ contract LoyaltyProgramFactory is Ownable {
         userInfoByAddress[userAddress] = newUser;
         addressByLoyaltyId[loyaltyId] = userAddress;
        
-        emit UserAdded(address(this), loyaltyProgramAddress, userAddress, loyaltyId);
+        emit UserAdded(address(this), loyaltyProgramAddress, userAddress, loyaltyId, block.timestamp);
     }
 
     function getUserInfoByAddress(address userAddress) public view returns (string memory loyaltyId, address loyaltyProgram) {
