@@ -5,9 +5,23 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "./OmniToken.sol";
 
-contract LoyaltyProgram is Ownable {
+struct EIP712Domain {
+    string name;
+    string version;
+    uint256 chainId;
+    address verifyingContract;
+}
+
+struct Approval {
+    address owner;
+    address spender;
+    uint256 value;
+}
+
+contract LoyaltyProgram is Ownable, EIP712 {
 
     using SafeERC20 for OmniToken; 
     using SafeMath for uint256;
@@ -15,12 +29,13 @@ contract LoyaltyProgram is Ownable {
     mapping(string => address) public loyalIdToUser;
     OmniToken public omniToken;
     uint256 public tokenRatio;
-    //mapping(address => uint256) private nonces;
     string public commerceName;
     string public commercePrefix;
     string[] public usersLoyaltyIds;
     uint256 public constant PRODUCT_RATIO = 80;
     uint256 public constant COMMERCE_RATIO = 20;
+    bytes32 private domainSeparator;
+    bytes32 public constant APPROVAL_TYPEHASH = keccak256("Approval(address owner,address spender,uint256 value)");
 
     event Registered(address indexed user, string loyal_ID, uint256 timestamp); 
     event RewardsSent(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
@@ -28,12 +43,21 @@ contract LoyaltyProgram is Ownable {
     event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp); 
     event RedeemProduct(address indexed from, address _toProductOwner, address indexed _toUserOwner, uint256 amount, uint256 timestamp); 
 
-    constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix) {
+    constructor(address _omniTokenAddress, address _owner, string memory _commerceName, string memory _commercePrefix)  EIP712("OmniWallet3", "1") {
         omniToken = OmniToken(_omniTokenAddress);
         commerceName = _commerceName;
         commercePrefix = _commercePrefix;
         tokenRatio = 1;
         transferOwnership(_owner); 
+        domainSeparator = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("OmniWallet3")),
+                keccak256(bytes("1")),
+                uint256(11155111),
+                address(this)
+            )
+        );
     }
 
     function register(string memory _loyalId, address _userAddress ) public onlyOwner returns (bool){
@@ -95,7 +119,7 @@ contract LoyaltyProgram is Ownable {
     }
 
     //gasless
-    function gaslessApprove(
+    /*function gaslessApprove(
         address _owner,
         address _spender,
         uint256 _value,
@@ -107,8 +131,30 @@ contract LoyaltyProgram is Ownable {
         require(success, "AF"); //Approval failed
         emit GaslessApproval(_owner, _spender, _value, block.timestamp);
         return success;
-    }
+    }*/
 
+    function gaslessApproveTyped(
+        address _owner,
+        address _spender,
+        uint256 _value,
+        bytes memory _signature
+    ) public onlyOwner returns (bool){
+        // Create the EIP712 hash of your data
+        bytes32 structHash = keccak256(abi.encode(APPROVAL_TYPEHASH, _owner, _spender, _value));
+        bytes32 digest = _hashTypedDataV4(structHash);
+        
+        // Recover the signer from the signature
+        address signer = ECDSA.recover(digest, _signature);
+        require(signer == _owner, "IS");
+        
+        // Now proceed with your approval logic
+        bool success = omniToken.approveFor(_owner, _spender, _value);
+        require(success, "AF");
+        
+        emit GaslessApproval(_owner, _spender, _value, block.timestamp);
+        return success;
+    }
+ 
     //gasless
     function userTransferTokensToUser(
         address _from,
@@ -131,7 +177,7 @@ contract LoyaltyProgram is Ownable {
         return ECDSA.recover(message, sig);
     }
     
-     function getUsersCount() public view returns (uint256) {
+    function getUsersCount() public view returns (uint256) {
         return usersLoyaltyIds.length;
     }
 
