@@ -118,21 +118,6 @@ contract LoyaltyProgram is Ownable, EIP712 {
         return true;
     }
 
-    //gasless
-    /*function gaslessApprove(
-        address _owner,
-        address _spender,
-        uint256 _value,
-        bytes memory _signature
-    ) public onlyOwner returns (bool){
-        bytes32 message = prefixed(keccak256(abi.encodePacked(_owner, _spender, _value)));
-        require(recoverSigner(message, _signature) == _owner, "IS"); //Invalid signature
-        bool success = omniToken.approveFor(_owner, _spender, _value);
-        require(success, "AF"); //Approval failed
-        emit GaslessApproval(_owner, _spender, _value, block.timestamp);
-        return success;
-    }*/
-
     function gaslessApproveTyped(
         address _owner,
         address _spender,
