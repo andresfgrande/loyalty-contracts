@@ -3,12 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "./OmniToken.sol";  
 import "./LoyaltyProgram.sol";  
 
-contract LoyaltyProgramFactory is Ownable {
+contract LoyaltyProgramFactory is Ownable, EIP712 {
 
-     using SafeERC20 for OmniToken; 
+    using SafeERC20 for OmniToken; 
     
     OmniToken public omniToken;
     address[] public commerceAddresses;
@@ -19,29 +21,25 @@ contract LoyaltyProgramFactory is Ownable {
         string prefix;
     }
 
-    // Mapping from loyalty address to its commerce details
-    mapping(address => Commerce) public commerceDetailsByAddress;
+    mapping(address => Commerce) public commerceDetailsByAddress; // Mapping from loyalty address to its commerce details
 
     struct User {
         string loyaltyId;
         address loyaltyProgram;
     }
 
-    // Mapping from user addres to user details
-    mapping(address => User) public userInfoByAddress;
+    bytes32 public constant REGISTER_TYPEHASH = keccak256("Register(string loyaltyId,address userAddress)");
 
-    // Mapping from loyalId to user Address
-    mapping(string => address) public addressByLoyaltyId;
-
-    // Mapping from user loyaltyId prefix to loyalty program address
-    mapping(string => address) public loyaltyProgramByPrefix;
+    mapping(address => User) public userInfoByAddress;  // Mapping from user addres to user details
+    mapping(string => address) public addressByLoyaltyId; // Mapping from loyaltyId to user Address
+    mapping(string => address) public loyaltyProgramByPrefix;// Mapping from user loyaltyId prefix to loyalty program address
 
     event LoyaltyProgramCreated(address indexed factory, address indexed loyaltyProgram, 
                                 address indexed commerceAddress, string commerceName, uint256 timestamp);
     event UserAdded(address indexed factory, address indexed loyaltyProgram, address indexed userAddress, string loyaltyId, uint256 timestamp);
     event TokensMintedTo(address indexed factory, address indexed to, uint256 amount, uint256 timestamp);
 
-    constructor(address _omniTokenAddress) {
+    constructor(address _omniTokenAddress) EIP712("OmniWallet3", "1"){
         omniToken = OmniToken(_omniTokenAddress);
     }
 
@@ -82,7 +80,19 @@ contract LoyaltyProgramFactory is Ownable {
     }
 
     // Function to add a new user to userInfoByAddress mapping
-    function addUserInfo(address userAddress, string memory loyaltyId, string memory loyaltyPrefix) public onlyOwner {
+    function addUserInfo(
+        address userAddress, 
+        string memory loyaltyId, 
+        string memory loyaltyPrefix,
+        bytes memory signature
+    ) public onlyOwner returns (bool) {
+
+        bytes32 structHash = keccak256(abi.encode(REGISTER_TYPEHASH, keccak256(abi.encodePacked(loyaltyId)), userAddress));
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        address signer = ECDSA.recover(digest, signature);
+        require(signer == userAddress, "IS");
+
         require(bytes(userInfoByAddress[userAddress].loyaltyId).length == 0, "UE"); //User exists
         require(addressByLoyaltyId[loyaltyId] == address(0), "LIDE"); //Loyalty ID exists
         address loyaltyProgramAddress = loyaltyProgramByPrefix[loyaltyPrefix];
@@ -95,6 +105,8 @@ contract LoyaltyProgramFactory is Ownable {
         addressByLoyaltyId[loyaltyId] = userAddress;
        
         emit UserAdded(address(this), loyaltyProgramAddress, userAddress, loyaltyId, block.timestamp);
+
+        return true;
     }
 
     function getUserInfoByAddress(address userAddress) public view returns (string memory loyaltyId, address loyaltyProgram) {
