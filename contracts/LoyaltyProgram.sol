@@ -23,13 +23,13 @@ contract LoyaltyProgram is Ownable, EIP712 {
     uint256 public constant COMMERCE_RATIO = 20;
     bytes32 public constant APPROVAL_TYPEHASH = keccak256("Approval(address owner,address spender,uint256 value)");
     bytes32 public constant TRANSFER_TYPEHASH = keccak256("Transfer(address from,address to,uint256 amount)");
-    bytes32 public constant REDEEM_TYPEHASH = keccak256("Redeem(string productSku,address from,address toProductOwner,address toUserOwner,uint256 amount)");
+    bytes32 public constant REDEEM_TYPEHASH = keccak256("Redeem(string productSku,address from,address toProductCommerce,address toUserCommerce,uint256 amount)");
 
     event Registered(address indexed user, string loyal_ID, uint256 timestamp); 
     event RewardsSent(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
     event UserTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
     event GaslessApproval(address indexed owner, address indexed spender, uint256 value, uint256 timestamp); 
-    event RedeemProduct(string productSku, address indexed from, address _toProductOwner, address indexed _toUserOwner, uint256 amount, uint256 timestamp); 
+    event RedeemProduct(string productSku, address indexed from, address toProductCommerce, address indexed toUserCommerce, uint256 amount, uint256 timestamp); 
     event Withdrawal(address indexed from, address indexed to, uint256 amount, uint256 timestamp); 
     event SetTokenRatio(address indexed from, uint256 ratio, uint256 timestamp); 
 

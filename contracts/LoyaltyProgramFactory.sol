@@ -38,6 +38,7 @@ contract LoyaltyProgramFactory is Ownable, EIP712 {
                                 address indexed commerceAddress, string commerceName, uint256 timestamp);
     event UserAdded(address indexed factory, address indexed loyaltyProgram, address indexed userAddress, string loyaltyId, uint256 timestamp);
     event TokensMintedTo(address indexed factory, address indexed to, uint256 amount, uint256 timestamp);
+    event TrustedRelayerAdded(address indexed factory, address indexed relayer, uint256 timestamp);
 
     constructor(address _omniTokenAddress) EIP712("OmniWallet3", "1"){
         omniToken = OmniToken(_omniTokenAddress);
@@ -116,6 +117,7 @@ contract LoyaltyProgramFactory is Ownable, EIP712 {
 
     function addTrustedRelayer(address loyaltyProgramAddress) public onlyOwner{
         omniToken.addTrustedRelayer(loyaltyProgramAddress);
+        emit TrustedRelayerAdded(address(this), loyaltyProgramAddress, block.timestamp);
     }
 
 }
